@@ -106,7 +106,7 @@ fn main() -> color_eyre::Result<()> {
     );
 
     let agent: Agent = Agent::config_builder()
-        .user_agent(concat!("CARGO_PKG_NAME", "/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")))
         .build()
         .into();
 
