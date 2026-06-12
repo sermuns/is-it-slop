@@ -105,6 +105,11 @@ fn main() -> color_eyre::Result<()> {
         args.github_project
     );
 
+    let agent_md_raw_url = format!(
+        "https://raw.githubusercontent.com/{}/HEAD/AGENTS.md",
+        args.github_project
+    );
+
     let agent: Agent = Agent::config_builder()
         .user_agent(concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")))
         .build()
@@ -121,6 +126,7 @@ fn main() -> color_eyre::Result<()> {
     let mut slop_score = 0;
     let mut slop_score_motivations = Vec::new();
     let mut num_outdated_dependencies = 0;
+    let mut has_agents_md = false;
 
     if let Some(package) = cargo_toml.package
         && let Some(edition) = package.edition
@@ -157,6 +163,14 @@ fn main() -> color_eyre::Result<()> {
 
     slop_score += num_outdated_dependencies;
 
+    match agent.get(agent_md_raw_url).call() {
+        Ok(_resp) => {
+            slop_score += 100;
+            has_agents_md = true;
+        },
+        Err(_e) => {},
+    }
+
     println!("\nslop score: {}", slop_score);
 
     for motivation in slop_score_motivations {
@@ -167,6 +181,9 @@ fn main() -> color_eyre::Result<()> {
             "- using {} outdated dependencies",
             num_outdated_dependencies
         );
+    }
+    if has_agents_md {
+        println!("- has an AGENTS.md file");
     }
 
     Ok(())
