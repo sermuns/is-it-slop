@@ -95,13 +95,22 @@ fn find_outdated_dependencies(
     Ok(())
 }
 
-fn find_agent_string_gitignore(gitignore: &str) -> bool {
-    println!("checking for AGENTS and CLAUDE in .gitignore");
+fn find_ai_string_in_gitignore(gitignore: &str) -> bool {
+    println!("checking for AI related strings in .gitignore");
     for line in gitignore.lines() {
         if line.to_ascii_lowercase().contains("claude") {
             return true
         }
         if line.to_ascii_lowercase().contains("agents") {
+            return true
+        }
+        if line.to_ascii_lowercase().contains("copilot-instructions") {
+            return true
+        }
+        if line.to_ascii_lowercase().contains("cursor/rules") {
+            return true
+        }
+        if line.to_ascii_lowercase().contains("codex/rules") {
             return true
         }
     }
@@ -193,7 +202,7 @@ fn main() -> color_eyre::Result<()> {
     match agent.get(gitignore_raw_url).call() {
         Ok(mut resp) => {
             let gitignore_str = resp.body_mut().read_to_string()?;
-            has_agents_md_in_gitignore = find_agent_string_gitignore(&gitignore_str);
+            has_agents_md_in_gitignore = find_ai_string_in_gitignore(&gitignore_str);
             if has_agents_md_in_gitignore {
                 slop_score += 200;
             }
