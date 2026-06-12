@@ -95,6 +95,19 @@ fn find_outdated_dependencies(
     Ok(())
 }
 
+fn find_agent_string_gitignore(gitignore: &str) -> bool {
+    println!("checking for AGENTS and CLAUDE in .gitignore");
+    for line in gitignore.lines() {
+        if line.to_ascii_lowercase().contains("claude") {
+            return true
+        }
+        if line.to_ascii_lowercase().contains("agents") {
+            return true
+        }
+    }
+    false
+}
+
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
@@ -107,6 +120,11 @@ fn main() -> color_eyre::Result<()> {
 
     let agent_md_raw_url = format!(
         "https://raw.githubusercontent.com/{}/HEAD/AGENTS.md",
+        args.github_project
+    );
+
+    let gitignore_raw_url = format!(
+        "https://raw.githubusercontent.com/{}/HEAD/.gitignore",
         args.github_project
     );
 
@@ -127,6 +145,7 @@ fn main() -> color_eyre::Result<()> {
     let mut slop_score_motivations = Vec::new();
     let mut num_outdated_dependencies = 0;
     let mut has_agents_md = false;
+    let mut has_agents_md_in_gitignore = false;
 
     if let Some(package) = cargo_toml.package
         && let Some(edition) = package.edition
@@ -171,6 +190,19 @@ fn main() -> color_eyre::Result<()> {
         Err(_e) => {},
     }
 
+    match agent.get(gitignore_raw_url).call() {
+        Ok(mut resp) => {
+            let gitignore_str = resp.body_mut().read_to_string()?;
+            has_agents_md_in_gitignore = find_agent_string_gitignore(&gitignore_str);
+            if has_agents_md_in_gitignore {
+                slop_score += 200;
+            }
+        }
+        Err(_e) => {}
+    }
+
+        
+
     println!("\nslop score: {}", slop_score);
 
     for motivation in slop_score_motivations {
@@ -184,6 +216,9 @@ fn main() -> color_eyre::Result<()> {
     }
     if has_agents_md {
         println!("- has an AGENTS.md file");
+    }
+    if has_agents_md_in_gitignore {
+        println!("- has an AGENTS.md or CLAUDE.md file in .gitignore");
     }
 
     Ok(())
