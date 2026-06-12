@@ -59,18 +59,17 @@ fn find_outdated_dependencies(
     println!("checking for outdated dependencies");
 
     for (crate_name, value) in dependencies {
-        // FIXME: fucking stop cloning
         let version_str = match &value {
             toml::Value::Table(table) if let Some(version_entry) = table.get("version") => {
                 match version_entry {
-                    toml::Value::String(version_str) => version_str.clone(),
+                    toml::Value::String(version_str) => version_str,
                     _ => unreachable!("we are fucked"),
                 }
             }
-            toml::Value::String(version_str) => version_str.clone(),
+            toml::Value::String(version_str) => version_str,
             _ => continue,
         };
-        let version_req = VersionReq::parse(&version_str)?;
+        let version_req = VersionReq::parse(version_str)?;
 
         let versions_response: RegistryVersionsResponse = agent
             .get(format!(
