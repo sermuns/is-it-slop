@@ -59,7 +59,7 @@ pub fn fetch_gitignore(github_project: &str, agent: &Agent) -> color_eyre::Resul
 }
 
 pub fn find_gitignored_sussy_files(gitignore: &str) -> Vec<&str> {
-    println!("checking for sussy files in .gitignore");
+    println!("\nchecking for sussy files in .gitignore");
 
     SUSSY_FILES
         .iter()
