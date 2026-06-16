@@ -31,19 +31,18 @@ pub struct Package {
 }
 
 #[derive(Deserialize, Debug)]
-struct RegistryVersionsResponse {
-    // TODO: stop allocing the entire vec.. just parse out the latest version, nothign more...
-    // maybe even get rid of this serde struct thingy, just rawdog it?
-    versions: Vec<RegistryCrateVersion>,
+struct RegistryCrateMetadata {
+    #[serde(rename = "crate")]
+    krate: RegistryCrate, // `crate` is reserved keyword
 }
 
 #[derive(Deserialize, Debug)]
-struct RegistryCrateVersion {
-    num: String,
+struct RegistryCrate {
+    max_stable_version: Version,
 }
 
 // TODO: do the requests concurrently
-// it's embarrasingly parallell....
+// it's embarrassingly parallel....
 // maybe switch to reqwest and have a tokio runtime..
 pub fn look_for_outdated_dependencies(
     dependencies: Dependencies,
@@ -65,21 +64,18 @@ pub fn look_for_outdated_dependencies(
         };
         let version_req = VersionReq::parse(version_str)?;
 
-        let versions_response: RegistryVersionsResponse = agent
-            .get(format!(
-                "https://crates.io/api/v1/crates/{}/versions",
-                crate_name
-            ))
+        let registry_crate_response: RegistryCrateMetadata = agent
+            .get(format!("https://crates.io/api/v1/crates/{}", crate_name))
             .call()?
             .body_mut()
             .read_json()?;
 
-        let latest_version: Version = versions_response.versions[0].num.parse()?;
+        let latest_stable_version = registry_crate_response.krate.max_stable_version;
 
-        if !version_req.matches(&latest_version) {
+        if !version_req.matches(&latest_stable_version) {
             println!(
-                "- {}: using {} but latest is {}",
-                crate_name, version_req, latest_version
+                "- {}: using {} but latest stable is {}",
+                crate_name, version_req, latest_stable_version
             );
             *num_outdated_dependencies += 1;
         }
@@ -95,13 +91,18 @@ pub fn is_old_edition(edition_str: &str) -> color_eyre::Result<bool> {
         < 2024)
 }
 
-pub fn fetch_cargo_toml(github_project: &str, agent: &Agent) -> color_eyre::Result<CargoToml> {
+pub fn fetch_cargo_toml(
+    github_project: &str,
+    git_ref: &str,
+    agent: &Agent,
+) -> color_eyre::Result<CargoToml> {
     let cargo_toml_str = agent
         .get(format!(
-            "https://raw.githubusercontent.com/{}/HEAD/Cargo.toml",
-            github_project
+            "https://raw.githubusercontent.com/{}/{}/Cargo.toml",
+            github_project, git_ref,
         ))
-        .call()?
+        .call()
+        .wrap_err("no `Cargo.toml` present in root of repo")?
         .body_mut()
         .read_to_string()?;
 

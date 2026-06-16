@@ -31,3 +31,8 @@ name = "lint code"
 language = "system"
 entry = "cargo clippy -- -D warnings"
 pass_filenames = false
+
+[[repos]]
+repo = "https://github.com/crate-ci/typos"
+rev = "v1.47.2"
+hooks = [{ id = "typos" }]

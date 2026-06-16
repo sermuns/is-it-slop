@@ -3,24 +3,15 @@ use color_eyre::eyre::{Context, OptionExt};
 use jiff::{Unit, ZonedDifference, tz::TimeZone};
 use ureq::Agent;
 
+mod cli;
 mod crate_metadata;
 mod github;
 
 use crate::{
+    cli::Args,
     crate_metadata::{fetch_cargo_toml, is_old_edition, look_for_outdated_dependencies},
     github::{fetch_gitignore, fetch_repo_details, find_gitignored_sussy_files, find_sussy_files},
 };
-
-#[derive(Parser, Debug)]
-#[command(version, about, arg_required_else_help = true)]
-struct Args {
-    /// Either <USER>/<REPO> or full URL
-    github_project_or_url: String,
-
-    /// Emit non-zero exit code if any slop detected
-    #[arg(long)]
-    check: bool,
-}
 
 #[allow(clippy::too_many_lines)]
 fn main() -> color_eyre::Result<()> {
@@ -74,7 +65,7 @@ fn main() -> color_eyre::Result<()> {
         _ => (),
     }
 
-    let cargo_toml = fetch_cargo_toml(github_project, &agent)?;
+    let cargo_toml = fetch_cargo_toml(github_project, &args.git_ref, &agent)?;
 
     if let Some(package) = cargo_toml.package
         && let Some(edition) = package.edition
@@ -114,7 +105,8 @@ fn main() -> color_eyre::Result<()> {
 
     let gitignore = fetch_gitignore(github_project, &agent)?;
     let sussy_files_gitignored = find_gitignored_sussy_files(&gitignore);
-    let sussy_files_present = find_sussy_files(github_project, &agent);
+
+    let sussy_files_present = find_sussy_files(github_project, &args.git_ref, &agent);
 
     let slop_score = num_outdated_dependencies
         + u16::try_from(
@@ -146,7 +138,7 @@ fn main() -> color_eyre::Result<()> {
         }
     }
 
-    if slop_score > 0 {
+    if args.check && slop_score > 0 {
         std::process::exit(1);
     }
 

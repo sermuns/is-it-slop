@@ -9,13 +9,13 @@ license = "WTFPL"
 clap = { version = "4", features = ["derive"] }
 color-eyre = "0.6"
 jiff = { version = "0.2", features = ["serde"] }
-semver = "1"
+semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 toml = "1"
 ureq = { version = "3.3", features = ["json"] }
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
-uninlined_format_args.level = "allow"
+uninlined_format_args = "allow"
 missing_errors_doc = "allow"
 items_after_statements = "allow"

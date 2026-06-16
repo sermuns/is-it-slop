@@ -25,9 +25,10 @@ Arguments:
   <GITHUB_PROJECT_OR_URL>  Either <USER>/<REPO> or full URL
 
 Options:
-      --check    Emit non-zero exit code if any slop detected
-  -h, --help     Print help
-  -V, --version  Print version
+      --check              Emit non-zero exit code if any slop detected
+      --git-ref <GIT_REF>  HEAD is a reasonable standard, but you can manually specify branch name or specific commit [default: HEAD]
+  -h, --help               Print help
+  -V, --version            Print version
 ```
 
 ## TODO
