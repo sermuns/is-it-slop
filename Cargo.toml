@@ -1,23 +1,12 @@
-[package]
-name = "is-it-slop"
-description = "CLI for detecting slop smell"
-version = "0.1.0"
+[workspace]
+resolver = "3"
+members = ["is-it-slop"]
+
+[workspace.package]
 edition = "2024"
 license = "WTFPL"
 
-[dependencies]
-clap = { version = "4", features = ["derive"] }
-color-eyre = "0.6"
-futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
-indicatif = { version = "0.18", default-features = false }
-jiff = { version = "0.2", features = ["serde"] }
-reqwest = { version = "0.13", default-features = false, features = ["default-tls", "charset", "json"] }
-semver = { version = "1", features = ["serde"] }
-serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["macros", "rt"] }
-toml = "1"
-
-[lints.clippy]
+[workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 uninlined_format_args = "allow"
 missing_errors_doc = "allow"
