@@ -1,0 +1,7 @@
+[package]
+name = "is-it-slop-web"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dioxus = { version = "0.7", features = ["web"] }
