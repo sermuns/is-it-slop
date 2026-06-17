@@ -7,6 +7,8 @@ fn main() {
 #[component]
 fn App() -> Element {
     rsx! {
-        "hello"
+        Stylesheet { href: asset!("/style.css") }
+
+        {env!("CARGO_PKG_NAME")}
     }
 }
