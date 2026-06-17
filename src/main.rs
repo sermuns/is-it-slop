@@ -1,7 +1,7 @@
 use clap::Parser;
-use color_eyre::eyre::{Context, OptionExt};
+use color_eyre::eyre::OptionExt;
 use jiff::{Unit, ZonedDifference, tz::TimeZone};
-use ureq::Agent;
+use reqwest::Client;
 
 mod cli;
 mod crate_metadata;
@@ -13,8 +13,11 @@ use crate::{
     github::{fetch_gitignore, fetch_repo_details, find_gitignored_sussy_files, find_sussy_files},
 };
 
+pub const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
+
 #[allow(clippy::too_many_lines)]
-fn main() -> color_eyre::Result<()> {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> color_eyre::Result<()> {
     color_eyre::config::HookBuilder::default()
         .display_env_section(false)
         .display_location_section(cfg!(debug_assertions))
@@ -22,23 +25,15 @@ fn main() -> color_eyre::Result<()> {
 
     let args = Args::parse();
 
+    let client = Client::builder().user_agent(USER_AGENT).build()?;
+
     let mut slop_score_motivations = Vec::new();
-    let mut num_outdated_dependencies = 0;
 
     let github_project = parse_github_project(&args.github_project_or_url)?;
 
     println!("checking 'https://github.com/{}'", github_project);
 
-    let agent: Agent = Agent::config_builder()
-        .user_agent(concat!(
-            env!("CARGO_PKG_NAME"),
-            "/",
-            env!("CARGO_PKG_VERSION")
-        ))
-        .build()
-        .into();
-
-    let repo = fetch_repo_details(github_project, &agent)?;
+    let repo = fetch_repo_details(github_project, &client).await?;
 
     let now_utc = jiff::Timestamp::now().to_zoned(TimeZone::UTC);
     let created_utc = repo.created_at.to_zoned(TimeZone::UTC);
@@ -65,7 +60,7 @@ fn main() -> color_eyre::Result<()> {
         _ => (),
     }
 
-    let cargo_toml = fetch_cargo_toml(github_project, &args.git_ref, &agent)?;
+    let cargo_toml = fetch_cargo_toml(github_project, &args.git_ref, &client).await?;
 
     if let Some(package) = cargo_toml.package
         && let Some(edition) = package.edition
@@ -74,14 +69,18 @@ fn main() -> color_eyre::Result<()> {
         slop_score_motivations.push(format!("using old Rust edition ({})", edition));
     }
 
+    let mut outdated_dependencies = Vec::new();
+
     if let Some(dependencies) = cargo_toml.dependencies {
-        look_for_outdated_dependencies(dependencies, &mut num_outdated_dependencies, &agent)?;
+        outdated_dependencies.extend(look_for_outdated_dependencies(dependencies, &client).await);
     }
     if let Some(dev_dependencies) = cargo_toml.dev_dependencies {
-        look_for_outdated_dependencies(dev_dependencies, &mut num_outdated_dependencies, &agent)?;
+        outdated_dependencies
+            .extend(look_for_outdated_dependencies(dev_dependencies, &client).await);
     }
     if let Some(build_dependencies) = cargo_toml.build_dependencies {
-        look_for_outdated_dependencies(build_dependencies, &mut num_outdated_dependencies, &agent)?;
+        outdated_dependencies
+            .extend(look_for_outdated_dependencies(build_dependencies, &client).await);
     }
 
     if let Some(workspace) = cargo_toml.workspace {
@@ -99,31 +98,32 @@ fn main() -> color_eyre::Result<()> {
         }
 
         if let Some(dependencies) = workspace.dependencies {
-            look_for_outdated_dependencies(dependencies, &mut num_outdated_dependencies, &agent)?;
+            outdated_dependencies
+                .extend(look_for_outdated_dependencies(dependencies, &client).await);
         }
     }
 
-    let gitignore = fetch_gitignore(github_project, &agent)?;
+    let sussy_files_present = find_sussy_files(github_project, &args.git_ref, &client).await;
+
+    let gitignore = fetch_gitignore(github_project, &args.git_ref, &client).await?;
     let sussy_files_gitignored = find_gitignored_sussy_files(&gitignore);
 
-    let sussy_files_present = find_sussy_files(github_project, &args.git_ref, &agent);
-
-    let slop_score = num_outdated_dependencies
-        + u16::try_from(
-            slop_score_motivations.len() + sussy_files_present.len() + sussy_files_present.len(),
-        )
-        .wrap_err("THE AMOUNT OF SLOP IS OVERWHELMING!!!")?;
+    let slop_score = outdated_dependencies.len()
+        + slop_score_motivations.len()
+        + sussy_files_present.len()
+        + sussy_files_present.len();
 
     println!("\nslop score: {}", slop_score);
 
     for motivation in slop_score_motivations {
         println!("- {}", motivation);
     }
-    if num_outdated_dependencies > 0 {
-        println!(
-            "- using {} outdated dependencies",
-            num_outdated_dependencies
-        );
+
+    if !outdated_dependencies.is_empty() {
+        println!("- outdated dependencies");
+        for outdated_dependency_motivation in outdated_dependencies {
+            println!("  - {}", outdated_dependency_motivation);
+        }
     }
     if !sussy_files_present.is_empty() {
         println!("- sussy files present:");

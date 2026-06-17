@@ -1,7 +1,8 @@
 use color_eyre::eyre::Context;
+use futures::stream::{self, StreamExt};
 use jiff::Timestamp;
+use reqwest::Client;
 use serde::Deserialize;
-use ureq::Agent;
 
 #[derive(Deserialize, Debug)]
 pub struct GithubRepoDetails {
@@ -17,45 +18,56 @@ static SUSSY_FILES: &[&str] = &[
     ".hermes/soul",
 ];
 
-pub fn fetch_repo_details(
+pub async fn fetch_repo_details(
     github_project: &str,
-    agent: &Agent,
+    client: &Client,
 ) -> color_eyre::Result<GithubRepoDetails> {
-    agent
+    client
         .get(String::from("https://api.github.com/repos/") + github_project)
-        .call()
+        .send()
+        .await
         .wrap_err("couldn't fetch repo details, are you sure it exists?")?
-        .body_mut()
-        .read_json()
+        .json()
+        .await
         .map_err(color_eyre::Report::from)
 }
 
-pub fn find_sussy_files(github_project: &str, git_ref: &str, agent: &Agent) -> Vec<String> {
-    SUSSY_FILES
-        .iter()
-        .filter_map(|sussy_file| {
-            agent
+pub async fn find_sussy_files(github_project: &str, git_ref: &str, client: &Client) -> Vec<String> {
+    println!("\nchecking for sussy files in the repo");
+
+    stream::iter(SUSSY_FILES)
+        .filter_map(|sussy_file| async {
+            client
                 .get(format_raw_github_file_url(
                     github_project,
                     git_ref,
                     sussy_file,
                 ))
-                .call()
+                .send()
+                .await
                 .is_ok()
                 .then_some(sussy_file.to_string())
         })
         .collect()
+        .await
 }
 
-pub fn fetch_gitignore(github_project: &str, agent: &Agent) -> color_eyre::Result<String> {
-    Ok(agent
-        .get(format!(
-            "https://raw.githubusercontent.com/{}/HEAD/.gitignore",
-            github_project
+pub async fn fetch_gitignore(
+    github_project: &str,
+    git_ref: &str,
+    client: &Client,
+) -> color_eyre::Result<String> {
+    client
+        .get(format_raw_github_file_url(
+            github_project,
+            git_ref,
+            ".gitignore",
         ))
-        .call()?
-        .body_mut()
-        .read_to_string()?)
+        .send()
+        .await?
+        .text()
+        .await
+        .map_err(color_eyre::Report::from)
 }
 
 pub fn find_gitignored_sussy_files(gitignore: &str) -> Vec<&str> {

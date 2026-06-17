@@ -8,11 +8,14 @@ license = "WTFPL"
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 color-eyre = "0.6"
+futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
+indicatif = { version = "0.18", default-features = false }
 jiff = { version = "0.2", features = ["serde"] }
+reqwest = { version = "0.13", default-features = false, features = ["default-tls", "charset", "json"] }
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt"] }
 toml = "1"
-ureq = { version = "3.3", features = ["json"] }
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
