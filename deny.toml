@@ -22,7 +22,6 @@ deny = [
     { crate = "openssl", use-instead = "rustls" },
     { crate = "openssl-sys", use-instead = "rustls" },
     "libssh2-sys",
-    { crate = "cmake", use-instead = "cc" },
     { crate = "windows", reason = "bloated and unnecessary", use-instead = "ideally inline bindings, practically, windows-sys" },
 ]
 skip-tree = [
