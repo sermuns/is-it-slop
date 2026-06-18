@@ -1776,6 +1776,7 @@ name = "is-it-slop-web"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "is-it-slop",
 ]
 
 [[package]]

@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 dioxus = { version = "0.7", features = ["web"] }
+is-it-slop = { path = "../is-it-slop", default-features = false }
