@@ -6,6 +6,8 @@ use semver::{Version, VersionReq};
 use serde::Deserialize;
 use toml::Table;
 
+use crate::GitHubProject;
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct CargoToml {
@@ -108,14 +110,15 @@ pub fn is_old_edition(edition_str: &str) -> color_eyre::Result<bool> {
 }
 
 pub async fn fetch_cargo_toml(
-    github_project: &str,
+    github_project: &GitHubProject,
     git_ref: &str,
     client: &Client,
 ) -> color_eyre::Result<CargoToml> {
     let cargo_toml_str = client
         .get(format!(
-            "https://raw.githubusercontent.com/{}/{}/Cargo.toml",
-            github_project, git_ref,
+            "https://raw.githubusercontent.com/{owner}/{repo}/{git_ref}/Cargo.toml",
+            owner = github_project.owner,
+            repo = github_project.repo,
         ))
         .send()
         .await

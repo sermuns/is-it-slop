@@ -4,6 +4,8 @@ use jiff::Timestamp;
 use reqwest::Client;
 use serde::Deserialize;
 
+use crate::GitHubProject;
+
 #[derive(Deserialize, Debug)]
 pub struct GithubRepoDetails {
     pub created_at: Timestamp,
@@ -19,11 +21,14 @@ static SUSSY_FILES: &[&str] = &[
 ];
 
 pub async fn fetch_repo_details(
-    github_project: &str,
+    github_project: &GitHubProject,
     client: &Client,
 ) -> color_eyre::Result<GithubRepoDetails> {
     client
-        .get(String::from("https://api.github.com/repos/") + github_project)
+        .get(format!(
+            "https://api.github.com/repos/{}/{}",
+            github_project.owner, github_project.repo
+        ))
         .send()
         .await
         .wrap_err("couldn't fetch repo details, are you sure it exists?")?
@@ -32,7 +37,11 @@ pub async fn fetch_repo_details(
         .map_err(color_eyre::Report::from)
 }
 
-pub async fn find_sussy_files(github_project: &str, git_ref: &str, client: &Client) -> Vec<String> {
+pub async fn find_sussy_files(
+    github_project: &GitHubProject,
+    git_ref: &str,
+    client: &Client,
+) -> Vec<String> {
     println!("\nchecking for sussy files in the repo");
 
     stream::iter(SUSSY_FILES)
@@ -57,7 +66,7 @@ pub async fn find_sussy_files(github_project: &str, git_ref: &str, client: &Clie
 }
 
 pub async fn fetch_gitignore(
-    github_project: &str,
+    github_project: &GitHubProject,
     git_ref: &str,
     client: &Client,
 ) -> color_eyre::Result<String> {
@@ -83,9 +92,14 @@ pub fn find_gitignored_sussy_files(gitignore: &str) -> Vec<&str> {
         .collect()
 }
 
-pub fn format_raw_github_file_url(github_project: &str, git_ref: &str, path: &str) -> String {
+pub fn format_raw_github_file_url(
+    github_project: &GitHubProject,
+    git_ref: &str,
+    path: &str,
+) -> String {
     format!(
-        "https://raw.githubusercontent.com/{}/{}/{}",
-        github_project, git_ref, path
+        "https://raw.githubusercontent.com/{owner}/{repo}/{git_ref}/{path}",
+        owner = github_project.owner,
+        repo = github_project.repo,
     )
 }

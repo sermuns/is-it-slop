@@ -1,5 +1,4 @@
 use clap::Parser;
-use color_eyre::eyre::OptionExt;
 use jiff::{Unit, ZonedDifference, tz::TimeZone};
 use reqwest::Client;
 
@@ -7,6 +6,7 @@ mod cli;
 mod crate_metadata;
 mod github;
 
+pub use crate::cli::GitHubProject;
 use crate::{
     cli::Args,
     crate_metadata::{fetch_cargo_toml, is_old_edition, look_for_outdated_dependencies},
@@ -24,16 +24,18 @@ async fn main() -> color_eyre::Result<()> {
         .install()?;
 
     let args = Args::parse();
+    let github_project = args.github_project_or_url;
 
     let client = Client::builder().user_agent(USER_AGENT).build()?;
 
     let mut slop_score_motivations = Vec::new();
 
-    let github_project = parse_github_project(&args.github_project_or_url)?;
+    println!(
+        "checking 'https://github.com/{}/{}'",
+        github_project.owner, github_project.repo
+    );
 
-    println!("checking 'https://github.com/{}'", github_project);
-
-    let repo = fetch_repo_details(github_project, &client).await?;
+    let repo = fetch_repo_details(&github_project, &client).await?;
 
     let now_utc = jiff::Timestamp::now().to_zoned(TimeZone::UTC);
     let created_utc = repo.created_at.to_zoned(TimeZone::UTC);
@@ -60,7 +62,7 @@ async fn main() -> color_eyre::Result<()> {
         _ => (),
     }
 
-    let cargo_toml = fetch_cargo_toml(github_project, &args.git_ref, &client).await?;
+    let cargo_toml = fetch_cargo_toml(&github_project, &args.git_ref, &client).await?;
 
     if let Some(package) = cargo_toml.package
         && let Some(edition) = package.edition
@@ -103,9 +105,9 @@ async fn main() -> color_eyre::Result<()> {
         }
     }
 
-    let sussy_files_present = find_sussy_files(github_project, &args.git_ref, &client).await;
+    let sussy_files_present = find_sussy_files(&github_project, &args.git_ref, &client).await;
 
-    let gitignore = fetch_gitignore(github_project, &args.git_ref, &client).await?;
+    let gitignore = fetch_gitignore(&github_project, &args.git_ref, &client).await?;
     let sussy_files_gitignored = find_gitignored_sussy_files(&gitignore);
 
     let slop_score = outdated_dependencies.len()
@@ -143,21 +145,4 @@ async fn main() -> color_eyre::Result<()> {
     }
 
     Ok(())
-}
-
-pub fn parse_github_project(github_project_or_url: &str) -> color_eyre::Result<&str> {
-    if !github_project_or_url.starts_with("http") {
-        // already what we want! hopefully..
-        return Ok(github_project_or_url);
-    }
-
-    let (_, rest) = github_project_or_url
-        .split_once("github.com/")
-        .ok_or_eyre("not a GitHub URL!")?;
-
-    let end_index = rest
-        .match_indices('/')
-        .nth(1)
-        .map_or(rest.len(), |(i, _)| i);
-    Ok(&rest[..end_index])
 }
