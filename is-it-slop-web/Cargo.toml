@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1"
 dioxus = { version = "0.7", features = ["web"] }
-is-it-slop = { path = "../is-it-slop", default-features = false }
+is-it-slop = { path = "../is-it-slop", default-features = false, features = ["wasm"] }

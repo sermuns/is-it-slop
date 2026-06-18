@@ -1775,6 +1775,7 @@ dependencies = [
 name = "is-it-slop-web"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "dioxus",
  "is-it-slop",
 ]
@@ -1799,10 +1800,12 @@ checksum = "4603d3033e49e2b0e31229fcab20a5d40089c607d975cd9c80551dc69eed9102"
 dependencies = [
  "jiff-static",
  "jiff-tzdb-platform",
+ "js-sys",
  "log",
  "portable-atomic",
  "portable-atomic-util",
  "serde_core",
+ "wasm-bindgen",
  "windows-link",
 ]
 

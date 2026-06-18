@@ -21,3 +21,4 @@ toml = "1"
 [features]
 default = ["std"]
 std = ["clap", "futures/std", "indicatif", "jiff/std", "semver/std", "tokio", "toml/std"]
+wasm = ["jiff/js"]

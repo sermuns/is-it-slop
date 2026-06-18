@@ -1,10 +1,7 @@
 use std::str::FromStr;
 
 use dioxus::prelude::*;
-use is_it_slop::{
-    github::{GitHubProject, fetch_gitignore},
-    reqwest,
-};
+use is_it_slop::{SlopReport, generate_slop_report, github::GitHubProject};
 
 pub const PKG_NAME: &str = "is-it-slop";
 
@@ -15,15 +12,18 @@ fn main() {
 #[component]
 fn App() -> Element {
     let mut project_search_input = use_signal(String::new);
-    let mut contents = use_signal(String::new);
+    let mut report_text = use_signal(String::new);
 
     let fetch = move |_| async move {
-        info!("{}", project_search_input());
-        let project = GitHubProject::from_str(&project_search_input()).unwrap();
-        let client = reqwest::Client::new();
-        info!("{:?}", project);
-        let gitignore = fetch_gitignore(&project, "HEAD", &client).await.unwrap();
-        contents.set(gitignore);
+        let github_project = match GitHubProject::from_str(&project_search_input()) {
+            Ok(p) => p,
+            Err(e) => {
+                report_text.set(e.to_string());
+                return;
+            }
+        };
+        let SlopReport { text, .. } = /*match */generate_slop_report(&github_project, "HEAD").await.unwrap();
+        report_text.set(text);
     };
 
     rsx! {
@@ -40,6 +40,6 @@ fn App() -> Element {
             "hello this is sick!"
         }
 
-        code { "{contents}" }
+        p { {report_text} }
     }
 }
