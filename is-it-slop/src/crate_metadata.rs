@@ -1,10 +1,12 @@
 use color_eyre::eyre::Context;
 use futures::prelude::*;
-use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Client;
 use semver::{Version, VersionReq};
 use serde::Deserialize;
 use toml::Table;
+
+#[cfg(feature = "std")]
+use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::github::GitHubProject;
 
@@ -51,12 +53,14 @@ pub async fn look_for_outdated_dependencies(
 ) -> Vec<String> {
     println!("\nlooking for outdated dependencies");
 
+    #[cfg(feature = "std")]
     let pb = ProgressBar::new(dependencies.len() as u64)
         .with_style(ProgressStyle::with_template("{msg} {wide_bar} {pos}/{len}").unwrap());
 
     // TODO: don't just silently drop entries on error!
     stream::iter(dependencies)
         .map(|(crate_name, value)| {
+            #[cfg(feature = "std")]
             let pb = pb.clone();
 
             async move {
@@ -83,8 +87,11 @@ pub async fn look_for_outdated_dependencies(
 
                 let latest_stable_version = registry_crate_response.krate.max_stable_version;
 
-                pb.inc(1);
-                pb.set_message(crate_name.clone()); // TODO: maybe avoid cloning
+                #[cfg(feature = "std")]
+                {
+                    pb.inc(1);
+                    pb.set_message(crate_name.clone()); // TODO: maybe avoid cloning
+                }
 
                 if version_req.matches(&latest_stable_version) {
                     None

@@ -7,13 +7,17 @@ license.workspace = true
 default-run = "is-it-slop"
 
 [dependencies]
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive"], optional = true }
 color-eyre = "0.6"
-futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
-indicatif = { version = "0.18", default-features = false }
-jiff = { version = "0.2", features = ["serde"] }
+futures = { version = "0.3", default-features = false, features = ["async-await"] }
+indicatif = { version = "0.18", default-features = false, optional = true }
+jiff = { version = "0.2", features = ["serde"], }
 reqwest = { version = "0.13", default-features = false, features = ["default-tls", "charset", "json"] }
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["macros", "rt"] }
+tokio = { version = "1", features = ["macros", "rt"], optional = true }
 toml = "1"
+
+[features]
+default = ["std"]
+std = ["clap", "futures/std", "indicatif", "jiff/std", "semver/std", "tokio", "toml/std"]
