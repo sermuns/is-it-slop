@@ -1,11 +1,15 @@
 :root {
-	--background-color: hsl(190, 40%, 11%);
-	--text-color: hsl(159, 40%, 95%);
+	--background-color: hsl(230, 30%, 15%);
+	--text-color: hsl(230, 40%, 95%);
 	--line-width: round(0.1rem, 1px);
-	--accent-color: hsl(159, 100%, 90%);
+	--accent-color: hsl(230, 100%, 90%);
 
 	background-color: var(--background-color);
 	color: var(--text-color);
+}
+
+* {
+	font-family: monospace;
 }
 
 body {
@@ -23,15 +27,11 @@ input {
 }
 
 #main {
-	flex: 1;
-
 	box-sizing: border-box;
-	display: flex;
-	flex-direction: column;
 	padding: 1rem;
 	gap: 2rem;
 	width: min(100%, 60rem);
-	margin: auto;
+	margin: 0 auto;
 }
 
 main {

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use dioxus::prelude::*;
 use is_it_slop::{
     github::{GitHubProject, fetch_gitignore},
@@ -12,15 +14,14 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    let mut project_search_input = use_signal(String::new);
     let mut contents = use_signal(String::new);
 
     let fetch = move |_| async move {
-        let project = GitHubProject {
-            repo: "ampy".into(),
-            owner: "HSScodes".into(),
-            url: None,
-        };
+        info!("{}", project_search_input());
+        let project = GitHubProject::from_str(&project_search_input()).unwrap();
         let client = reqwest::Client::new();
+        info!("{:?}", project);
         let gitignore = fetch_gitignore(&project, "HEAD", &client).await.unwrap();
         contents.set(gitignore);
     };
@@ -30,7 +31,14 @@ fn App() -> Element {
 
         h1 { {PKG_NAME} }
 
-        button { onclick: fetch }
+        input {
+            onchange: move |e| project_search_input.set(e.value())
+        }
+
+        button {
+            onclick: fetch,
+            "hello this is sick!"
+        }
 
         code { "{contents}" }
     }
