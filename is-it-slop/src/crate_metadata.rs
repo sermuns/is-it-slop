@@ -6,7 +6,7 @@ use semver::{Version, VersionReq};
 use serde::Deserialize;
 use toml::Table;
 
-use crate::GitHubProject;
+use crate::github::GitHubProject;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]

@@ -1,17 +1,14 @@
 use clap::Parser;
+use is_it_slop::{
+    crate_metadata::{fetch_cargo_toml, is_old_edition, look_for_outdated_dependencies},
+    github::{fetch_gitignore, fetch_repo_details, find_gitignored_sussy_files, find_sussy_files},
+};
 use jiff::{Unit, ZonedDifference, tz::TimeZone};
 use reqwest::Client;
 
 mod cli;
-mod crate_metadata;
-mod github;
 
-pub use crate::cli::GitHubProject;
-use crate::{
-    cli::Args,
-    crate_metadata::{fetch_cargo_toml, is_old_edition, look_for_outdated_dependencies},
-    github::{fetch_gitignore, fetch_repo_details, find_gitignored_sussy_files, find_sussy_files},
-};
+use crate::cli::Args;
 
 pub const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 

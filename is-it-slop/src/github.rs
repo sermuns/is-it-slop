@@ -1,10 +1,54 @@
-use color_eyre::eyre::Context;
+use std::str::FromStr;
+
+use color_eyre::eyre::{Context, OptionExt, bail};
 use futures::stream::{self, StreamExt};
 use jiff::Timestamp;
-use reqwest::Client;
+use reqwest::{Client, Url};
 use serde::Deserialize;
 
-use crate::GitHubProject;
+#[derive(Debug, Clone)]
+pub struct GitHubProject {
+    pub owner: String,
+    pub repo: String,
+    pub url: Option<Url>,
+}
+
+impl FromStr for GitHubProject {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(url) = Url::parse(s) {
+            if url.host_str() != Some("github.com") {
+                bail!("not a GitHub URL!");
+            }
+            let mut segments = url
+                .path_segments()
+                .ok_or_eyre("cannot parse cannot-be-a-base URL")?;
+            let (Some(owner), Some(repo), None) =
+                (segments.next(), segments.next(), segments.next())
+            else {
+                bail!("path segments do not match format '/<owner>/<repository>'");
+            };
+            return Ok(GitHubProject {
+                owner: owner.to_owned(),
+                repo: repo.to_owned(),
+                url: Some(url),
+            });
+        }
+
+        let mut segments = s.split('/');
+        let (Some(owner), Some(repo), None) = (segments.next(), segments.next(), segments.next())
+        else {
+            bail!("argument does not match format '<owner>/<repository>'");
+        };
+
+        Ok(GitHubProject {
+            owner: owner.to_owned(),
+            repo: repo.to_owned(),
+            url: None,
+        })
+    }
+}
 
 #[derive(Deserialize, Debug)]
 pub struct GithubRepoDetails {
