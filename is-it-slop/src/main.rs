@@ -126,7 +126,7 @@ async fn main() -> color_eyre::Result<()> {
     let slop_score = outdated_dependencies.len()
         + slop_score_motivations.len()
         + sussy_files_present.len()
-        + sussy_files_present.len()
+        + sussy_files_gitignored.len()
         + sussy_coauthors.len();
 
     println!("\nslop score: {}", slop_score);
