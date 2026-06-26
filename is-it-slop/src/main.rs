@@ -10,7 +10,7 @@ pub use crate::cli::GitHubProject;
 use crate::{
     cli::Args,
     crate_metadata::{fetch_cargo_toml, is_old_edition, look_for_outdated_dependencies},
-    github::{fetch_gitignore, fetch_repo_details, find_gitignored_sussy_files, find_sussy_files},
+    github::{fetch_gitignore, fetch_repo_details, find_gitignored_sussy_files, find_sussy_coauthors, find_sussy_files},
 };
 
 pub const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
@@ -72,6 +72,18 @@ async fn main() -> color_eyre::Result<()> {
     }
 
     let mut outdated_dependencies = Vec::new();
+    let has_dependencies = cargo_toml.dependencies.is_some()
+        || cargo_toml.dev_dependencies.is_some()
+        || cargo_toml.build_dependencies.is_some()
+        || cargo_toml
+            .workspace
+            .as_ref()
+            .and_then(|workspace| workspace.dependencies.as_ref())
+            .is_some();
+
+    if has_dependencies {
+        println!("\nlooking for outdated dependencies");
+    }
 
     if let Some(dependencies) = cargo_toml.dependencies {
         outdated_dependencies.extend(look_for_outdated_dependencies(dependencies, &client).await);
@@ -106,6 +118,7 @@ async fn main() -> color_eyre::Result<()> {
     }
 
     let sussy_files_present = find_sussy_files(&github_project, &args.git_ref, &client).await;
+    let sussy_coauthors = find_sussy_coauthors(&github_project, &args.git_ref, &client).await;
 
     let gitignore = fetch_gitignore(&github_project, &args.git_ref, &client).await?;
     let sussy_files_gitignored = find_gitignored_sussy_files(&gitignore);
@@ -113,7 +126,8 @@ async fn main() -> color_eyre::Result<()> {
     let slop_score = outdated_dependencies.len()
         + slop_score_motivations.len()
         + sussy_files_present.len()
-        + sussy_files_present.len();
+        + sussy_files_present.len()
+        + sussy_coauthors.len();
 
     println!("\nslop score: {}", slop_score);
 
@@ -137,6 +151,12 @@ async fn main() -> color_eyre::Result<()> {
         println!("- sussy files gitignored:");
         for sussy_file in sussy_files_gitignored {
             println!("  - {}", sussy_file);
+        }
+    }
+    if !sussy_coauthors.is_empty() {
+        println!("- sussy co-authors:");
+        for coauthor in sussy_coauthors {
+            println!("  - {}", coauthor);
         }
     }
 

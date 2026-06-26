@@ -1,7 +1,7 @@
 use color_eyre::eyre::Context;
 use futures::stream::{self, StreamExt};
 use jiff::Timestamp;
-use reqwest::Client;
+use reqwest::{Client, Url};
 use serde::Deserialize;
 
 use crate::GitHubProject;
@@ -11,6 +11,16 @@ pub struct GithubRepoDetails {
     pub created_at: Timestamp,
 }
 
+#[derive(Deserialize, Debug)]
+struct GithubCommitEntry {
+    commit: GithubCommit,
+}
+
+#[derive(Deserialize, Debug)]
+struct GithubCommit {
+    message: String,
+}
+
 static SUSSY_FILES: &[&str] = &[
     "AGENTS.md",
     "CLAUDE.md",
@@ -18,6 +28,15 @@ static SUSSY_FILES: &[&str] = &[
     ".cursor/rules",
     ".codex/rules",
     ".hermes/soul",
+];
+
+static SUSSY_COAUTHOR_PATTERNS: &[&str] = &[
+    "claude <noreply@anthropic.com>",
+    "claude code <noreply@anthropic.com>",
+    "cursoragent@cursor.com>",
+    "+copilot@users.noreply.github.com>",
+    "<copilot@users.noreply.github.com>",
+    "+devin-ai-integration[bot]@users.noreply.github.com>"
 ];
 
 pub async fn fetch_repo_details(
@@ -35,6 +54,69 @@ pub async fn fetch_repo_details(
         .json()
         .await
         .map_err(color_eyre::Report::from)
+}
+
+pub async fn find_sussy_coauthors(
+    github_project: &GitHubProject,
+    git_ref: &str,
+    client: &Client,
+) -> Vec<String> {
+    println!("\nchecking recent commits for sussy co-authors");
+
+    let commits_url = Url::parse_with_params(
+        &format!(
+            "https://api.github.com/repos/{}/{}/commits",
+            github_project.owner, github_project.repo
+        ),
+        &[("sha", git_ref), ("per_page", "100")],
+    )
+    .expect("github commits URL should be valid");
+
+    let commits: Vec<GithubCommitEntry> = match client.get(commits_url).send().await {
+        Ok(response) => match response.json().await {
+            Ok(commits) => commits,
+            Err(e) => {
+                println!("error while reading commit list: {:?}", e);
+                return Vec::new();
+            }
+        },
+        Err(e) => {
+            println!("error while fetching commit list: {:?}", e);
+            return Vec::new();
+        }
+    };
+
+    let mut matches = Vec::new();
+
+    for commit in commits {
+        for line in commit.commit.message.lines() {
+            let Some((_, coauthor)) = line.split_once(':') else {
+                continue;
+            };
+
+            if !line
+                .get(.."co-authored-by".len())
+                .is_some_and(|prefix| prefix.eq_ignore_ascii_case("co-authored-by"))
+            {
+                continue;
+            }
+
+            let coauthor = coauthor.trim();
+            if is_sussy_coauthor(coauthor) && !matches.iter().any(|seen| seen == coauthor) {
+                matches.push(coauthor.to_owned());
+            }
+        }
+    }
+
+    matches
+}
+
+fn is_sussy_coauthor(coauthor: &str) -> bool {
+    let coauthor = coauthor.to_ascii_lowercase();
+
+    SUSSY_COAUTHOR_PATTERNS
+        .iter()
+        .any(|pattern| coauthor.contains(pattern))
 }
 
 pub async fn find_sussy_files(

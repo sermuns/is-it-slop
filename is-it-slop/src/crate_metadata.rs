@@ -49,8 +49,6 @@ pub async fn look_for_outdated_dependencies(
     dependencies: Dependencies,
     client: &Client,
 ) -> Vec<String> {
-    println!("\nlooking for outdated dependencies");
-
     let pb = ProgressBar::new(dependencies.len() as u64)
         .with_style(ProgressStyle::with_template("{msg} {wide_bar} {pos}/{len}").unwrap());
 
