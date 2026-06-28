@@ -36,7 +36,7 @@ static SUSSY_COAUTHOR_PATTERNS: &[&str] = &[
     "cursoragent@cursor.com>",
     "+copilot@users.noreply.github.com>",
     "<copilot@users.noreply.github.com>",
-    "+devin-ai-integration[bot]@users.noreply.github.com>"
+    "+devin-ai-integration[bot]@users.noreply.github.com>",
 ];
 
 pub async fn fetch_repo_details(
