@@ -68,7 +68,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: crate-ci/typos@v1.47.2
+      - uses: crate-ci/typos@v1.48.0
 
   cargo-deny:
     runs-on: ubuntu-22.04
