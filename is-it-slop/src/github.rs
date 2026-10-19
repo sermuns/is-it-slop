@@ -31,12 +31,14 @@ static SUSSY_FILES: &[&str] = &[
 ];
 
 static SUSSY_COAUTHOR_PATTERNS: &[&str] = &[
-    "claude <noreply@anthropic.com>",
-    "claude code <noreply@anthropic.com>",
-    "cursoragent@cursor.com>",
-    "+copilot@users.noreply.github.com>",
-    "<copilot@users.noreply.github.com>",
-    "+devin-ai-integration[bot]@users.noreply.github.com>",
+    "noreply@anthropic.com",
+    "cursoragent@cursor.com",
+    "copilot@users.noreply.github.com",
+    "copilot@github.com",
+    "opencode.ai",
+    "opencode-agent[bot]@users.noreply.github.com",
+    "devin-ai-integration[bot]@users.noreply.github.com",
+    "gemini-cli-robot@users.noreply.github.com",
 ];
 
 pub async fn fetch_repo_details(
